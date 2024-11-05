@@ -247,9 +247,13 @@ mortality_cold_days <- sqldf(
 ############### 4) CHLOROPLETH MAPS ###################
 #######################################################
 
+# BASE R METHOD
 # Unfortunately, base R doesn't support reading/writing shape files
-# 'out of the box', so below is a methods of creating a chloropleth
-# map using a lightweight package for handling GIS data called 'sf'
+# 'out of the box'. Technically, we could write a function to do this, but
+# this would require dealing with binary and is way beyond our scope.
+
+# So, below is a methods of creating a choropleth map using a lightweight
+# package for handling GIS data called 'sf'
 
 gva <- c(161:166, 201, 202, 37, 38, 42, 44, 45, 43, 42, 75, 34, 35) # stores gva lha codes
 
@@ -260,7 +264,7 @@ bcmap <- st_read("shapefile/lha.shp") # Read shapefile into R
 
 str(bcmap) # View the data we've just loaded into R
 
-plot(bcmap) # View the map we've just brought into R
+plot(bcmap) # View the basemap we've just loaded into R
 
 mortality_hot_days_gva <- mortality_hot_days[mortality_hot_days$id_number %in% gva, ]
 
@@ -271,9 +275,9 @@ gvamap <- merge(bcmap, mortality_hot_days_gva, by.x = "ID_NUMBER", by.y = "id_nu
 str(gvamap) # Confirm the merge worked
 
 # Set up the inputs for the chloropleth map
-num_colors <- length(unique(gvamap$death_counts))  # Define a sufficient number of colors for a smooth gradient
+num_colors <- length(unique(gvamap$death_counts))  # Assign a colour to each unique death_count value
 
-colors <- rev(colorRampPalette(heat.colors(num_colors))(num_colors)) # Create a continuous color gradient
+colors <- rev(heat.colors(length(unique(gvamap$death_counts))))# Create a continuous color gradient
 
 color_indices <- as.numeric(cut(gvamap$death_counts, 
                                 breaks = num_colors, 
@@ -281,12 +285,10 @@ color_indices <- as.numeric(cut(gvamap$death_counts,
 
 # Plot the choropleth map
 plot(st_geometry(gvamap), col = colors[color_indices], border = "black")
+
+# Create a legend for the map
 legend("topright",   
        legend = pretty(range(gvamap$death_counts), n = 5),  # Continuous scale for legend
        fill = colors[round(seq(1, num_colors, length.out = 5))],  # Select colors along the gradient
        title = "Death Counts")
-
-# BASE R METHOD ...
-
-
 
