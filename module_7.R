@@ -177,7 +177,7 @@ saveRDS(mortality_geocoded, "m7/mortality_geocoded.rds") # save in m7 as RDS
 ############### 4) MAPPING ###################
 ##############################################
 
-# SELECTING ONLY THE NECESSSARY VARIABLE
+# SELECTING ONLY THE NECESSARY VARIABLE
 mapping_mortality <- sqldf(
   "SELECT uid,
           death_date,
@@ -214,12 +214,11 @@ mortality_lha <- sqldf(
 # Verify that the dataset has 231178 rows as intended
 str(mortality_lha) 
 
-# To be extra sure, run this SQL query
 sqldf(
   "SELECT COUNT(*)
    FROM mortality_lha
    WHERE lhacode IS NOT NULL"
-)
+) # To be extra sure, run this SQL query
 
 # CREATE HOT DAYS AND COLD DAYS DATASETS
 # Store the 99.9th hottest temperature and the 0.1th coldest temperature
@@ -249,48 +248,45 @@ mortality_cold_days <- sqldf(
 #######################################################
 
 # Unfortunately, base R doesn't support reading/writing shape files
-# 'out of the box', so below are two methods of creating a chloropleth
-# map (of sorts): the first using base R only, and the second using a light
-# weight package for handling GIS data called 'sf'
+# 'out of the box', so below is a methods of creating a chloropleth
+# map using a lightweight package for handling GIS data called 'sf'
 
 gva <- c(161:166, 201, 202, 37, 38, 42, 44, 45, 43, 42, 75, 34, 35) # stores gva lha codes
 
-# BASE R METHOD
-
-
 # SF (SIMPLE FEATURES) METHOD
-library(sf)
+library(sf) # load the 'sf' library
 
 bcmap <- st_read("shapefile/lha.shp") # Read shapefile into R
 
-plot(bcmap) # Here's the map we've just brought into R
+str(bcmap) # View the data we've just loaded into R
+
+plot(bcmap) # View the map we've just brought into R
 
 mortality_hot_days_gva <- mortality_hot_days[mortality_hot_days$id_number %in% gva, ]
-colnames(mortality_hot_days_gva) <- toupper(colnames(mortality_hot_days))
 
 str(mortality_hot_days_gva)
 
-gvamap <- merge(bcmap, mortality_hot_days_gva, by = "ID_NUMBER")
+gvamap <- merge(bcmap, mortality_hot_days_gva, by.x = "ID_NUMBER", by.y = "id_number")
 
-# MAKE THE CHLOROPLETH MAP
-# Store the number of colors based on the unique DEATH_COUNTS
-num_colors <- length(unique(gvamap$DEATH_COUNTS))
+str(gvamap) # Confirm the merge worked
 
-# Create a color palette based on the number of unique values
-colors <- terrain.colors(num_colors)
+# Set up the inputs for the chloropleth map
+num_colors <- length(unique(gvamap$death_counts))  # Define a sufficient number of colors for a smooth gradient
 
-# Map DEATH_COUNTS to color indices
-color_indices <- as.numeric(cut(gvamap$DEATH_COUNTS, 
+colors <- rev(colorRampPalette(heat.colors(num_colors))(num_colors)) # Create a continuous color gradient
+
+color_indices <- as.numeric(cut(gvamap$death_counts, 
                                 breaks = num_colors, 
-                                labels = FALSE))
+                                labels = FALSE)) # Map death_counts to color indices along a continuous scale
 
-# Make the choropleth map
+# Plot the choropleth map
 plot(st_geometry(gvamap), col = colors[color_indices], border = "black")
-legend("topright",  
-       legend = sort(unique(gvamap$DEATH_COUNTS)),  # Unique values for legend labels
-       fill = colors,  # Use the generated color palette
+legend("topright",   
+       legend = pretty(range(gvamap$death_counts), n = 5),  # Continuous scale for legend
+       fill = colors[round(seq(1, num_colors, length.out = 5))],  # Select colors along the gradient
        title = "Death Counts")
 
+# BASE R METHOD ...
 
 
 
