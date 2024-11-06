@@ -34,9 +34,9 @@ str(mortality_ill_small) # You should see that your R object was created
 
 
 
-##############################################
-### ACCESSING NATIVE R FUNCTIONS IN SQLDF ####
-##############################################
+###################################################
+### SQL: ACCESSING NATIVE R FUNCTIONS IN SQLDF ####
+###################################################
 
 # Run this code. What happened?
 mortality_ill_small_v2 <- sqldf(
@@ -72,14 +72,24 @@ str(mortality_ill_small_v2) # Let's see the new dataset we made
 
 # Try to find a function that will this shapefile into R. Don't
 # load any packages! Hint: most base R read functions begin with "read"
-filepath <- "shapefile/lha.shp"
+
+filepath <- "shapefile/lha.shp" # Try to read this filepath in the space below
 
 
-# No luck? Ask Google and ChatGPT. What'd you find?
+# Any luck? 
 
-# Note that ChatGPT may try to tell you that R has a package included by default 
-# called 'maps' that will enable you to read
-# and plot GIS data. This is incorrect. 
+
+
+
+
+###########################################################
+### GIS: TRY TO FIND BASE R FUNCTIONS FOR SPATIAL DATA ####
+###########################################################
+
+# Now ask your favourite generative AI tool or search engine. What'd you find?
+
+# Note that ChatGPT may try to (incorrectly) tell you that R has a package 
+# included by default called 'maps' that works with spatial data.
 
 
 
