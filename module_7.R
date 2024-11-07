@@ -2,6 +2,8 @@
 ###### 1) SETUP #######
 #######################
 
+# if not installed, run: install.packages('sqldf')
+
 library(sqldf)
 
 # Import mortality data
@@ -14,12 +16,14 @@ m4dat <- readRDS("data/m4dat.rds")
 ##### 2) EXAMINING THE PCCF ######
 ##################################
 
-pccf <- readRDS("data/postal_code_conversion_file.rds") # Read in pccf data
+pccf <- read.csv("data/postal_code_conversion_file.csv") # Read in pccf data
+pccf$start_date <- as.Date(pccf$start_date) # Format start date
+pccf$end_date <- as.Date(pccf$end_date) # Format end date
 
 str(pccf) # See what the data looks like
 
 # Order by postal code (ascending) and by end_date (descending)
-pccf <- pccf[order(pccf$postal_code, -as.numeric(pccf$end_date)), ]
+pccf <- pccf[order(pccf$postal_code, -as.numeric(pccf$end_date)), ] # RD: simplify this code for readability
 
 # View first 10 rows, only these three variables
 head(pccf[, c("postal_code", "start_date", "end_date")], n = 10)
@@ -41,7 +45,7 @@ sqldf(
   "SELECT count(postal_code) AS tot_postal_code,
           count(distinct(postal_code)) AS unique_postal_code
    FROM pccf_short"
-  )
+)
 
 # Explore the number of times a given postal code appears
 sqldf(
@@ -55,7 +59,7 @@ sqldf(
 # Get the average, min, and max number of times each postal code appears
 sqldf(
   "SELECT AVG(pc_count) AS mean_pc_count,
-          MIN(pc_count) AS mini_pc_count,
+          MIN(pc_count) AS min_pc_count,
           MAX(pc_count) AS max_pc_count
    FROM (SELECT COUNT(postal_code) AS pc_count
          FROM pccf_short
@@ -330,6 +334,8 @@ plot(bcmap) # View the basemap we've just loaded into R
 gvamap_hot <- merge(bcmap, mortality_hot_days_gva, by.x = "ID_NUMBER", by.y = "id_number")
 str(gvamap_hot) # Confirm the merge worked
 
+plot(gvamap_hot["death_counts"])
+
 plot(st_geometry(gvamap_hot), 
      col = rev(heat.colors(100))[as.numeric(cut(gvamap_hot$death_count, 100))], 
      main = "Death Counts by Region")
@@ -342,6 +348,8 @@ legend("bottomright",
 # CREATE THE MAP FOR COLD DAYS
 gvamap_cold <- merge(bcmap, mortality_cold_days_gva, by.x = "ID_NUMBER", by.y = "id_number")
 str(gvamap_cold)
+
+plot(gvamap_cold["death_counts"])
 
 plot(st_geometry(gvamap_cold), 
      col = rev(heat.colors(100))[as.numeric(cut(gvamap_cold$death_count, 100))], 
