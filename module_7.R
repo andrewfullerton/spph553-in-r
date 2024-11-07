@@ -291,7 +291,7 @@ bcmap_baseR <- readRDS("data/bcmap_data.rds") # Note that this is only possible 
 
 str(bcmap_baseR) # View the data we've just loaded into R
 
-# CREATE THE MAP FOR HOT DAYS
+# CREATE THE PLOT FOR HOT DAYS
 gvamap_baseR_hot <- merge(bcmap_baseR, mortality_hot_days_gva, by.x = "ID_NUMBER", by.y = "id_number")
 str(gvamap_baseR_hot) # Verify that the merge worked
 
@@ -305,7 +305,7 @@ barplot(gvamap_baseR_hot$death_counts,
         cex.names = 0.7,  # Reduce label size
         ylim = c(0, 20)) # y-axis range
 
-# CREATE THE MAP FOR COLD DAYS
+# CREATE THE PLOT FOR COLD DAYS
 gvamap_baseR_cold <- merge(bcmap_baseR, mortality_cold_days_gva, by.x = "ID_NUMBER", by.y = "id_number")
 str(gvamap_baseR_cold) # Verify that the merge worked
 
