@@ -170,7 +170,8 @@ sqldf(
 )
 
 # From this, we can see that the mortality data were dropped during linkage
-# because the death dates were not found between the start and end dates
+# because the death dates were not found between the start and end dates while
+# some were missing the necessary data
 
 # Create the final geocoded dataset
 mortality_geocoded <- sqldf(
