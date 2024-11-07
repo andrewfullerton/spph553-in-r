@@ -5,46 +5,45 @@
 library(sqldf)
 
 # Import mortality data
-mortality <- read.csv("data/m3_mortality.csv")
-mortality$death_date <- as.Date(mortality$death_date)
-
-# Import pccf data
-pccf <- read.csv("data/postal_code_conversion_file.csv")
-pccf$end_date <- as.Date(pccf$end_date)
+mortality <- readRDS("data/m3_mortality.rds")
 
 # Import m4dat data
-m4dat <- read.csv("data/m4dat.csv")
-m4dat$date <- as.Date(m4dat$date)
+m4dat <- readRDS("data/m4dat.rds")
 
-################################
-### 2) EXAMINING THE PCCF ######
-################################
+##################################
+##### 2) EXAMINING THE PCCF ######
+##################################
 
-str(pccf) # Lets see what the data looks like
+pccf <- readRDS("data/postal_code_conversion_file.rds") # Read in pccf data
 
-pccf <- pccf[order(pccf$postal_code, -as.numeric(pccf$end_date)), ] # Order by postal code (ascending) and by end_date (descending)
+str(pccf) # See what the data looks like
 
-head(pccf[, c("postal_code", "start_date", "end_date")], n = 10) # View first 10 rows, only these three variables
+# Order by postal code (ascending) and by end_date (descending)
+pccf <- pccf[order(pccf$postal_code, -as.numeric(pccf$end_date)), ]
+
+# View first 10 rows, only these three variables
+head(pccf[, c("postal_code", "start_date", "end_date")], n = 10)
 
 # Reduce the dataset to the essential variables
 pccf_short <- sqldf(
-       "SELECT postal_code, 
-              start_date, 
-              end_date,
-              longitude,
-              latitude
-       FROM pccf"
-       )
+  "SELECT postal_code, 
+          start_date, 
+          end_date,
+          longitude,
+          latitude
+   FROM pccf"
+)
 
-str(pccf_short)
+str(pccf_short) # View changes
 
-# Count the distinct postal codes
+# Explore how many distinct postal code entries are in the pccf
 sqldf(
   "SELECT count(postal_code) AS tot_postal_code,
           count(distinct(postal_code)) AS unique_postal_code
    FROM pccf_short"
   )
 
+# Explore the number of times a given postal code appears
 sqldf(
   "SELECT postal_code,
           count(postal_code) AS pc_count
@@ -53,29 +52,45 @@ sqldf(
    LIMIT 10"
 )
 
-# Get the average, min,and max number of time each postal code appears
-sqldf("
-  SELECT AVG(pc_count) AS mean_pc_count,
-         MIN(pc_count) AS mini_pc_count,
-         MAX(pc_count) AS max_pc_count
-  FROM (SELECT COUNT(postal_code) AS pc_count
-        FROM pccf_short
-        GROUP BY postal_code)
-      ")
+# Get the average, min, and max number of times each postal code appears
+sqldf(
+  "SELECT AVG(pc_count) AS mean_pc_count,
+          MIN(pc_count) AS mini_pc_count,
+          MAX(pc_count) AS max_pc_count
+   FROM (SELECT COUNT(postal_code) AS pc_count
+         FROM pccf_short
+         GROUP BY postal_code)"
+)
 
 ####################################################
 ######## 3) GEOCODING THE MORTALITY DATASET ########
 ####################################################
-str(mortality)
 
-sum(is.na(mortality$postcode))
+str(mortality) # Remind ourselves what this dataset looks like
 
-# Count null postal codes
+# Count null postal codes (attempt 1)
+sqldf(
+  "SELECT COUNT(uid)
+   FROM mortality
+   WHERE postcode IS NULL"
+)
+
+# Hmm ... this is exactly how we did it in SAS. Why the difference in output?
+
+sum(is.na(mortality$postcode)) # Count number of null values using base R
+nrow(mortality[mortality$postcode == '.', ]) # Count number of cells with '.'
+nrow(mortality[mortality$postcode == '', ]) # Count number of empty cells
+
+# Count null postal codes (attempt 2)
 sqldf(
   "SELECT COUNT(uid)
    FROM mortality
    WHERE postcode = ''"
 )
+
+# That looks better! Different software packages handle missing values 
+# differently. Since postcode is stored as a character variable in R, it will 
+# not convert missing cells to NAs by default. 
 
 # Create a version of the mortality data with no missing values
 m7_mortality <- sqldf(
@@ -86,12 +101,10 @@ m7_mortality <- sqldf(
 
 str(m7_mortality) # 230916 observations in the new mortality dataset
 
-# We need to convert to dates before we can do this next SQL query
-pccf_short$start_date <- as.Date(pccf_short$start_date)
-pccf_short$end_date <- as.Date(pccf_short$end_date)
-m7_mortality$death_date <- as.Date(m7_mortality$death_date)
 
 # Test the linkage plan
+str(pccf_short) # Remind ourselves what our pccf data looks like
+
 sqldf(
   "SELECT uid,
           postcode AS pc_mort,
@@ -106,6 +119,7 @@ sqldf(
 ) |>
   head(n = 10)
 
+# Linking the data
 mortality_comp <- sqldf(
   "SELECT uid,
           postcode AS pc_mort,
@@ -118,17 +132,19 @@ mortality_comp <- sqldf(
    FROM m7_mortality AS a JOIN pccf_short AS b ON a.postcode=b.postal_code
    WHERE a.death_date BETWEEN b.start_date AND b.end_date"
 )
-# Note that the number of observations has changed
 
-str(mortality_comp) 
+str(mortality_comp) # Note that the number of observations has changed
 
+# Look at the dropped observations. Since we know that any rows in m7_mortality
+# without a corresponding entry (i.e. were dropped) will have a null in 
+# mortality_comp, we can produce a list of the dropped observations. 
 sqldf(
   "SELECT a.uid AS orig_id,
           b.uid AS unlinked_id,
           a.postcode
    FROM m7_mortality AS a LEFT JOIN mortality_comp as b ON a.uid=b.uid
    WHERE b.uid is NULL"
-)
+) 
 # We lost 15 observations 
 
 # Let's investigate further...
@@ -149,7 +165,7 @@ sqldf(
 )
 
 # From this, we can see that the mortality data were dropped during linkage
-# because ...
+# because the death dates were not found between the start and end dates
 
 # Create the final geocoded dataset
 mortality_geocoded <- sqldf(
@@ -177,7 +193,8 @@ saveRDS(mortality_geocoded, "m7/mortality_geocoded.rds") # save in m7 as RDS
 ############### 4) MAPPING ###################
 ##############################################
 
-# SELECTING ONLY THE NECESSARY VARIABLE
+# LINKING THE DATA
+# Select only the variable we want to use going forward
 mapping_mortality <- sqldf(
   "SELECT uid,
           death_date,
@@ -193,7 +210,6 @@ temp <- sqldf(
    FROM m4dat"
 )
 
-# LINKING THE DATA
 # Testing our linkage
 sqldf(
   "SELECT a.*,
@@ -244,20 +260,64 @@ mortality_cold_days <- sqldf(
 )
 
 #######################################################
-############### 4) CHLOROPLETH MAPS ###################
+############### 4) CHOROPLETH MAPS ####################
 #######################################################
 
 # BASE R METHOD
 # Unfortunately, base R doesn't support reading/writing shape files
 # 'out of the box'. Technically, we could write a function to do this, but
-# this would require dealing with binary and is way beyond our scope.
+# this would require dealing with matrices and is way beyond our scope.
 
-# So, below is a methods of creating a choropleth map using a lightweight
-# package for handling GIS data called 'sf'
+# I've included one of my many failed attempts to make sense of this as an R file.
 
-gva <- c(161:166, 201, 202, 37, 38, 42, 44, 45, 43, 42, 75, 34, 35) # stores gva lha codes
+# So, below is are two methods of creating a mapping the data: 
+# The first uses base R only and a bit of data processing magic. It falls short 
+# of a choropleth map but is a visual representation of the data. The second uses 
+# a lightweight package for handling GIS data called 'sf'.
 
-# SF (SIMPLE FEATURES) METHOD
+gva <- c(161:166, 201, 202, 37, 38, 42, 44, 45, 43, 42, 75, 34, 35) # gva codes
+
+mortality_hot_days_gva <- mortality_hot_days[mortality_hot_days$id_number %in% gva, ]
+str(mortality_hot_days_gva) # View the new dataset
+
+mortality_cold_days_gva <- mortality_cold_days[mortality_cold_days$id_number %in% gva, ]
+str(mortality_cold_days_gva) # View the new dataset
+
+#### BASE R METHOD (ISH) ####
+bcmap_baseR <- readRDS("data/bcmap_data.rds") # Note that this is only possible with some data pre-processing
+
+str(bcmap_baseR) # View the data we've just loaded into R
+
+# CREATE THE MAP FOR HOT DAYS
+gvamap_baseR_hot <- merge(bcmap_baseR, mortality_hot_days_gva, by.x = "ID_NUMBER", by.y = "id_number")
+str(gvamap_baseR) # Verify that the merge worked
+
+par(mar = c(10, 4, 4, 2))
+barplot(gvamap_baseR$death_counts, 
+        names.arg = gvamap_baseR$LHA_NAME, # Region names on the x-axis
+        col = "lightyellow", # Bar colour
+        ylab = "Death Counts", # Y-axis label
+        main = "Death Counts by GVA Region", # Plot title
+        las = 2, # Rotate x-axis labels for readability
+        cex.names = 0.7,  # Reduce label size
+        ylim = c(0, 20)) # y-axis range
+
+# CREATE THE MAP FOR COLD DAYS
+gvamap_baseR_cold <- merge(bcmap_baseR, mortality_cold_days_gva, by.x = "ID_NUMBER", by.y = "id_number")
+str(gvamap_baseR_cold) # Verify that the merge worked
+
+par(mar = c(10, 4, 4, 2))
+barplot(gvamap_baseR_cold$death_counts, 
+        names.arg = gvamap_baseR_cold$LHA_NAME, # Region names on the x-axis
+        col = "lightblue", # Bar colour
+        ylab = "Death Counts", # Y-axis label
+        main = "Death Counts by GVA Region", # Plot title
+        las = 2, # Rotate x-axis labels for readability
+        cex.names = 0.7,  # Reduce label size
+        ylim = c(0, 20)) # y-axis range
+
+
+#### SF (SIMPLE FEATURES) METHOD ####
 library(sf) # load the 'sf' library
 
 bcmap <- st_read("shapefile/lha.shp") # Read shapefile into R
@@ -266,29 +326,32 @@ str(bcmap) # View the data we've just loaded into R
 
 plot(bcmap) # View the basemap we've just loaded into R
 
-mortality_hot_days_gva <- mortality_hot_days[mortality_hot_days$id_number %in% gva, ]
+# CREATE THE MAP FOR HOT DAYS
+gvamap_hot <- merge(bcmap, mortality_hot_days_gva, by.x = "ID_NUMBER", by.y = "id_number")
+str(gvamap_hot) # Confirm the merge worked
 
-str(mortality_hot_days_gva)
+plot(st_geometry(gvamap_hot), 
+     col = rev(heat.colors(100))[as.numeric(cut(gvamap_hot$death_count, 100))], 
+     main = "Death Counts by Region")
 
-gvamap <- merge(bcmap, mortality_hot_days_gva, by.x = "ID_NUMBER", by.y = "id_number")
-
-str(gvamap) # Confirm the merge worked
-
-# Set up the inputs for the chloropleth map
-num_colors <- length(unique(gvamap$death_counts))  # Assign a colour to each unique death_count value
-
-colors <- rev(heat.colors(length(unique(gvamap$death_counts))))# Create a continuous color gradient
-
-color_indices <- as.numeric(cut(gvamap$death_counts, 
-                                breaks = num_colors, 
-                                labels = FALSE)) # Map death_counts to color indices along a continuous scale
-
-# Plot the choropleth map
-plot(st_geometry(gvamap), col = colors[color_indices], border = "black")
-
-# Create a legend for the map
-legend("topright",   
-       legend = pretty(range(gvamap$death_counts), n = 5),  # Continuous scale for legend
-       fill = colors[round(seq(1, num_colors, length.out = 5))],  # Select colors along the gradient
+legend("bottomright", 
+       legend = seq(min(gvamap_hot$death_count), max(gvamap_hot$death_count), length.out = 5), 
+       fill = rev(heat.colors(5)), 
        title = "Death Counts")
+
+# CREATE THE MAP FOR COLD DAYS
+gvamap_cold <- merge(bcmap, mortality_cold_days_gva, by.x = "ID_NUMBER", by.y = "id_number")
+str(gvamap_cold)
+
+plot(st_geometry(gvamap_cold), 
+     col = rev(heat.colors(100))[as.numeric(cut(gvamap_cold$death_count, 100))], 
+     main = "Death Counts by Region")
+
+legend("bottomright", 
+       legend = seq(min(gvamap_cold$death_count), max(gvamap_cold$death_count), length.out = 5), 
+       fill = rev(heat.colors(5)), 
+       title = "Death Counts")
+
+
+
 
