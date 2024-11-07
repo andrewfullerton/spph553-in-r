@@ -39,8 +39,9 @@ pccf <- pccf[order(pccf$postal_code, rev(as.numeric(pccf$end_date))), ]
 head(pccf[, c("postal_code", "start_date", "end_date")], n = 10)
 ```
 
+### Reduce the dataset to the essential variables
+
 ```{r}
-# Reduce the dataset to the essential variables
 pccf_short <- sqldf(
   "SELECT postal_code, 
           start_date, 
@@ -49,14 +50,13 @@ pccf_short <- sqldf(
           latitude
    FROM pccf"
 )
-```
 
-```{r}
 str(pccf_short) # View changes
 ```
 
+### Explore how many distinct postal code entries are in the pccf
+
 ```{r}
-# Explore how many distinct postal code entries are in the pccf
 sqldf(
   "SELECT count(postal_code) AS tot_postal_code,
           count(distinct(postal_code)) AS unique_postal_code
@@ -64,8 +64,9 @@ sqldf(
 )
 ```
 
+### Explore the number of times a given postal code appears
+
 ```{r}
-# Explore the number of times a given postal code appears
 sqldf(
   "SELECT postal_code,
           count(postal_code) AS pc_count
@@ -75,8 +76,9 @@ sqldf(
 )
 ```
 
+### Get the average, min, and max number of times each postal code appears
+
 ```{r}
-# Get the average, min, and max number of times each postal code appears
 sqldf(
   "SELECT AVG(pc_count) AS mean_pc_count,
           MIN(pc_count) AS min_pc_count,
@@ -137,9 +139,7 @@ m7_mortality <- sqldf(
    FROM mortality
    WHERE postcode != ''"
 )
-```
 
-```{r}
 str(m7_mortality) # 230916 observations in the new mortality dataset
 ```
 
@@ -180,13 +180,11 @@ mortality_comp <- sqldf(
    FROM m7_mortality AS a JOIN pccf_short AS b ON a.postcode=b.postal_code
    WHERE a.death_date BETWEEN b.start_date AND b.end_date"
 )
-```
 
-```{r}
 str(mortality_comp) # Note that the number of observations has changed
 ```
 
-Look at the dropped observations. Since we know that any rows in m7_mortality without a corresponding entry (i.e. were dropped) will have a null id in `mortality_comp`, we can produce a list of the dropped observations. 
+Look at the dropped observations. Since we know that any rows in `m7_mortality` without a corresponding entry (i.e. were dropped) will have a null id in `mortality_comp`, we can produce a list of the dropped observations. 
 
 ```{r}
 sqldf(
@@ -232,9 +230,7 @@ mortality_geocoded <- sqldf(
    FROM mortality_comp
    WHERE longitude is NOT NULL AND latitude is NOT NULL"
 )
-```
 
-```{r}
 str(mortality_geocoded) # Verify that the dataset has 229557 rows as intended
 ```
 
@@ -256,8 +252,9 @@ saveRDS(mortality_geocoded, "m7/mortality_geocoded.rds") # save in m7 as RDS
 
 # 4) Mapping
 
+### Select only the variables we want to use going forward
+
 ```{r}
-# Select only the variables we want to use going forward
 mapping_mortality <- sqldf(
   "SELECT uid,
           death_date,
@@ -297,9 +294,7 @@ mortality_lha <- sqldf(
           b.temperature_Max
    FROM mapping_mortality AS a LEFT JOIN temp AS b ON a.death_date=b.date"
 )
-```
 
-```{r}
 str(mortality_lha) # Verify that the dataset has 231178 rows as intended
 ```
 
@@ -313,8 +308,9 @@ sqldf(
 
 ### Create hot days and cold days datasets
 
+### Store the 99.9th hottest temperature and the 0.1th coldest temperature
+
 ```{r}
-# Store the 99.9th hottest temperature and the 0.1th coldest temperature
 quantile(mortality_lha$temperature_Max, probs = 0.999) # hottest temps
 ```
 
@@ -322,8 +318,9 @@ quantile(mortality_lha$temperature_Max, probs = 0.999) # hottest temps
 quantile(mortality_lha$temperature_Min, probs = 0.001) # coldest temps
 ```
 
+### Create hot days dataset
+
 ```{r}
-# Create hot days dataset
 mortality_hot_days <- sqldf(
   "SELECT lhacode AS id_number,
           COUNT(uid) AS death_counts
@@ -333,8 +330,9 @@ mortality_hot_days <- sqldf(
 )
 ```
 
+### Create cold days datase
+
 ```{r}
-# Create cold days dataset
 mortality_cold_days <- sqldf(
   "SELECT lhacode AS id_number,
           COUNT(uid) AS death_counts
@@ -349,7 +347,7 @@ mortality_cold_days <- sqldf(
 Unfortunately, base R doesn't support reading/writing shape files 'out of the box'. Technically, we could write a function to do this, but this would require dealing with regular expressions (and matrices) and is way beyond our scope.
 
 So, below are two methods of mapping the data: 
-The first uses base R only and a bit of data processing magic. It falls short of a choropleth map but is a visual representation of the data. The second uses  a lightweight package for handling GIS data called `sf`.
+The first uses base R only and a bit of data processing magic. It falls short of a choropleth map but is a visual representation of the data. The second uses a lightweight package for handling GIS data called `sf`.
 
 ```{r}
 gva <- c(161:166, 201, 202, 37, 38, 42, 44, 45, 43, 42, 75, 34, 35) # gva codes
