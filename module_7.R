@@ -16,7 +16,8 @@ m4dat <- readRDS("data/m4dat.rds")
 ##### 2) EXAMINING THE PCCF ######
 ##################################
 
-pccf <- read.csv("data/postal_code_conversion_file.csv") # Read in pccf data
+# Read in pccf data
+pccf <- read.csv("data/postal_code_conversion_file.csv")
 pccf$start_date <- as.Date(pccf$start_date) # Format start date
 pccf$end_date <- as.Date(pccf$end_date) # Format end date
 
@@ -140,7 +141,7 @@ mortality_comp <- sqldf(
 str(mortality_comp) # Note that the number of observations has changed
 
 # Look at the dropped observations. Since we know that any rows in m7_mortality
-# without a corresponding entry (i.e. were dropped) will have a null in 
+# without a corresponding entry (i.e. were dropped) will have a null id in 
 # mortality_comp, we can produce a list of the dropped observations. 
 sqldf(
   "SELECT a.uid AS orig_id,
@@ -198,7 +199,7 @@ saveRDS(mortality_geocoded, "m7/mortality_geocoded.rds") # save in m7 as RDS
 ##############################################
 
 # LINKING THE DATA
-# Select only the variable we want to use going forward
+# Select only the variables we want to use going forward
 mapping_mortality <- sqldf(
   "SELECT uid,
           death_date,
@@ -264,17 +265,15 @@ mortality_cold_days <- sqldf(
 )
 
 #######################################################
-############### 4) CHOROPLETH MAPS ####################
+############### 5) CHOROPLETH MAPS ####################
 #######################################################
 
 # Unfortunately, base R doesn't support reading/writing shape files
 # 'out of the box'. Technically, we could write a function to do this, but
-# this would require dealing with matrices and is way beyond our scope.
+# this would require dealing with regular expressions (and matrices) 
+# and is way beyond our scope.
 
-# I've included an R file with one my most recent failed attempts to accomplish 
-# this using base R only.
-
-# So, below is are two methods of creating a mapping the data: 
+# So, below are two methods of mapping the data: 
 # The first uses base R only and a bit of data processing magic. It falls short 
 # of a choropleth map but is a visual representation of the data. The second uses 
 # a lightweight package for handling GIS data called 'sf'.
@@ -294,11 +293,11 @@ str(bcmap_baseR) # View the data we've just loaded into R
 
 # CREATE THE MAP FOR HOT DAYS
 gvamap_baseR_hot <- merge(bcmap_baseR, mortality_hot_days_gva, by.x = "ID_NUMBER", by.y = "id_number")
-str(gvamap_baseR) # Verify that the merge worked
+str(gvamap_baseR_hot) # Verify that the merge worked
 
 par(mar = c(10, 4, 4, 2))
 barplot(gvamap_baseR_hot$death_counts, 
-        names.arg = gvamap_baseR$LHA_NAME, # Region names on the x-axis
+        names.arg = gvamap_baseR_hot$LHA_NAME, # Region names on the x-axis
         col = "lightyellow", # Bar colour
         ylab = "Death Counts", # Y-axis label
         main = "Death Counts by GVA Region", # Plot title
@@ -325,9 +324,7 @@ barplot(gvamap_baseR_cold$death_counts,
 library(sf) # load the 'sf' library
 
 bcmap <- st_read("shapefile/lha.shp") # Read shapefile into R
-
 str(bcmap) # View the data we've just loaded into R
-
 plot(bcmap) # View the basemap we've just loaded into R
 
 # CREATE THE MAP FOR HOT DAYS
