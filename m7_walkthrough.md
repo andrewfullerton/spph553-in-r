@@ -113,7 +113,7 @@ str(pccf) # See what the data looks like
 
 ``` r
 # Order by postal code (ascending) and by end_date (descending)
-pccf <- pccf[order(pccf$postal_code, rev(as.numeric(pccf$end_date))), ]
+pccf <- pccf[order(pccf$postal_code, -as.numeric(pccf$end_date)), ]
 
 # View first 10 rows, only these three variables
 head(pccf[, c("postal_code", "start_date", "end_date")], n = 10)
@@ -122,14 +122,14 @@ head(pccf[, c("postal_code", "start_date", "end_date")], n = 10)
     ##        postal_code start_date   end_date
     ## 385056      V0A0A0 2014-10-01 2100-12-31
     ## 526933      V0A0A1 2015-10-01 2100-12-31
-    ## 267885      V0A0A1 2013-10-01 2013-12-31
     ## 268441      V0A0A1 2014-01-01 2015-09-30
+    ## 267885      V0A0A1 2013-10-01 2013-12-31
     ## 267886      V0A0A2 2013-10-01 2100-12-31
-    ## 267887      V0A0A3 2013-10-01 2013-12-31
     ## 268442      V0A0A3 2014-01-01 2100-12-31
+    ## 267887      V0A0A3 2013-10-01 2013-12-31
     ## 267888      V0A0A4 2013-10-01 2100-12-31
-    ## 267889      V0A0A5 2013-10-01 2013-12-31
     ## 268443      V0A0A5 2014-01-01 2100-12-31
+    ## 267889      V0A0A5 2013-10-01 2013-12-31
 
 ### Reduce the dataset to the essential variables
 

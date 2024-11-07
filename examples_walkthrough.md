@@ -52,7 +52,8 @@ sqldf(
    SELECT uid,
           death_date,
           sex
-   FROM mortality_ill")
+   FROM mortality_ill"
+)
 ```
 
     ## Warning in result_fetch(res@ptr, n = n): SQL statements must be issued with
@@ -79,8 +80,8 @@ str(mortality_ill_small) # You should see that your R object was created
     ##  $ sex       : chr  "Female" "Female" "Male" "Male" ...
 
 This is because SQL is not integrated into R via `sqldf` the same way
-that `PROC SQL` integrates SQL with SAS. We cannot read and write data
-into/from our R environment using `sqldf`.
+that `PROC SQL` integrates SQL with SAS. We cannot write data within SQL
+queries passed into `sqldf`.
 
 # SQL: Accessing native R functions in `sqldf`
 
@@ -123,8 +124,8 @@ We can only use standard SQL functions in `sqldf`.
 
 # GIS: Reading shapefiles into our environment
 
-Try to find a function that will this shapefile into R. Don’t load any
-packages! Hint: most base R read functions begin with `read`.
+Try to find a function that will read this shapefile into R. Don’t load
+any packages! Hint: most base R read functions begin with `read`.
 
 ``` r
 filepath <- "shapefile/lha.shp" # Try to read this filepath in the space below

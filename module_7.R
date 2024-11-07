@@ -24,7 +24,7 @@ pccf$end_date <- as.Date(pccf$end_date) # Format end date
 str(pccf) # See what the data looks like
 
 # Order by postal code (ascending) and by end_date (descending)
-pccf <- pccf[order(pccf$postal_code, rev(as.numeric(pccf$end_date))), ]
+pccf <- pccf[order(pccf$postal_code, -as.numeric(pccf$end_date)), ]
 
 # View first 10 rows, only these three variables
 head(pccf[, c("postal_code", "start_date", "end_date")], n = 10)
