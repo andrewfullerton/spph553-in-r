@@ -23,7 +23,7 @@ pccf$end_date <- as.Date(pccf$end_date) # Format end date
 str(pccf) # See what the data looks like
 
 # Order by postal code (ascending) and by end_date (descending)
-pccf <- pccf[order(pccf$postal_code, -as.numeric(pccf$end_date)), ] # RD: simplify this code for readability
+pccf <- pccf[order(pccf$postal_code, rev(as.numeric(pccf$end_date))), ]
 
 # View first 10 rows, only these three variables
 head(pccf[, c("postal_code", "start_date", "end_date")], n = 10)
@@ -267,12 +267,12 @@ mortality_cold_days <- sqldf(
 ############### 4) CHOROPLETH MAPS ####################
 #######################################################
 
-# BASE R METHOD
 # Unfortunately, base R doesn't support reading/writing shape files
 # 'out of the box'. Technically, we could write a function to do this, but
 # this would require dealing with matrices and is way beyond our scope.
 
-# I've included one of my many failed attempts to make sense of this as an R file.
+# I've included an R file with one my most recent failed attempts to accomplish 
+# this using base R only.
 
 # So, below is are two methods of creating a mapping the data: 
 # The first uses base R only and a bit of data processing magic. It falls short 
@@ -297,7 +297,7 @@ gvamap_baseR_hot <- merge(bcmap_baseR, mortality_hot_days_gva, by.x = "ID_NUMBER
 str(gvamap_baseR) # Verify that the merge worked
 
 par(mar = c(10, 4, 4, 2))
-barplot(gvamap_baseR$death_counts, 
+barplot(gvamap_baseR_hot$death_counts, 
         names.arg = gvamap_baseR$LHA_NAME, # Region names on the x-axis
         col = "lightyellow", # Bar colour
         ylab = "Death Counts", # Y-axis label
@@ -334,32 +334,15 @@ plot(bcmap) # View the basemap we've just loaded into R
 gvamap_hot <- merge(bcmap, mortality_hot_days_gva, by.x = "ID_NUMBER", by.y = "id_number")
 str(gvamap_hot) # Confirm the merge worked
 
-plot(gvamap_hot["death_counts"])
-
-plot(st_geometry(gvamap_hot), 
-     col = rev(heat.colors(100))[as.numeric(cut(gvamap_hot$death_count, 100))], 
-     main = "Death Counts by Region")
-
-legend("bottomright", 
-       legend = seq(min(gvamap_hot$death_count), max(gvamap_hot$death_count), length.out = 5), 
-       fill = rev(heat.colors(5)), 
-       title = "Death Counts")
+plot(gvamap_hot["death_counts"], 
+     key.pos = 1,
+     main = "Death Counts by GVA Region")
 
 # CREATE THE MAP FOR COLD DAYS
 gvamap_cold <- merge(bcmap, mortality_cold_days_gva, by.x = "ID_NUMBER", by.y = "id_number")
 str(gvamap_cold)
 
-plot(gvamap_cold["death_counts"])
-
-plot(st_geometry(gvamap_cold), 
-     col = rev(heat.colors(100))[as.numeric(cut(gvamap_cold$death_count, 100))], 
-     main = "Death Counts by Region")
-
-legend("bottomright", 
-       legend = seq(min(gvamap_cold$death_count), max(gvamap_cold$death_count), length.out = 5), 
-       fill = rev(heat.colors(5)), 
-       title = "Death Counts")
-
-
-
+plot(gvamap_cold["death_counts"], 
+     key.pos = 1,
+     main = "Death Counts by GVA Region")
 

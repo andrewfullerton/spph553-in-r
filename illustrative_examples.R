@@ -1,3 +1,5 @@
+# if not installed, run: install.packages('sqldf')
+
 library(sqldf)
 
 mortality_ill <- read.csv("data/m3_mortality.csv")
@@ -52,8 +54,8 @@ mortality_ill_small_v2 <- sqldf(
    FROM mortality_ill"
 )
 
-mortality_ill_small_v2$death_date <- as.Date(mortality_ill_small_v2$death_date, 
-                                             format = '%m/%d/%Y')
+mortality_ill_small_v2$death_date <- as.Date(mortality_ill_small_v2$death_date,
+                                             format = '%Y-%m-%d')
 
 str(mortality_ill_small_v2) # Let's see the new dataset we made
 
@@ -74,6 +76,7 @@ str(mortality_ill_small_v2) # Let's see the new dataset we made
 # load any packages! Hint: most base R read functions begin with "read"
 
 filepath <- "shapefile/lha.shp" # Try to read this filepath in the space below
+
 
 
 # Any luck? 
