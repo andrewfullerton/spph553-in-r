@@ -1238,7 +1238,7 @@ barplot(gvamap_baseR_hot$death_counts,
         names.arg = gvamap_baseR_hot$LHA_NAME, # Region names on the x-axis
         col = "lightyellow", # Bar colour
         ylab = "Death Counts", # Y-axis label
-        main = "Death Counts by GVA Region", # Plot title
+        main = "Death Counts by LHA Region", # Plot title
         las = 2, # Rotate x-axis labels for readability
         cex.names = 0.7,  # Reduce label size
         ylim = c(0, 20)) # y-axis range
@@ -1315,7 +1315,7 @@ barplot(gvamap_baseR_cold$death_counts,
         names.arg = gvamap_baseR_cold$LHA_NAME, # Region names on the x-axis
         col = "lightblue", # Bar colour
         ylab = "Death Counts", # Y-axis label
-        main = "Death Counts by GVA Region", # Plot title
+        main = "Death Counts by LHA Region", # Plot title
         las = 2, # Rotate x-axis labels for readability
         cex.names = 0.7,  # Reduce label size
         ylim = c(0, 20)) # y-axis range
@@ -1395,7 +1395,7 @@ str(gvamap_hot) # Confirm the merge worked
 ``` r
 plot(gvamap_hot["death_counts"], 
      key.pos = 1,
-     main = "Death Counts by GVA Region")
+     main = "Death Counts by LHA Region")
 ```
 
 ![](m7_walkthrough_files/figure-gfm/unnamed-chunk-44-1.png)<!-- -->
@@ -1426,7 +1426,7 @@ str(gvamap_cold)
 ``` r
 plot(gvamap_cold["death_counts"], 
      key.pos = 1,
-     main = "Death Counts by GVA Region")
+     main = "Death Counts by LHA Region")
 ```
 
 ![](m7_walkthrough_files/figure-gfm/unnamed-chunk-46-1.png)<!-- -->
